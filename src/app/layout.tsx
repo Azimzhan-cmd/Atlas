@@ -4,6 +4,7 @@ import { GlobalCanvas } from '@/lib/canvas/GlobalCanvas'
 import { Cursor } from '@/components/ui/Cursor'
 import { NavBar } from '@/components/ui/NavBar'
 import { PointerProvider } from '@/components/ui/PointerProvider'
+import { MotionGuard } from '@/components/ui/MotionGuard'
 
 export const metadata: Metadata = {
   title: {
@@ -33,6 +34,9 @@ export default function RootLayout({
 
         {/* ── Global pointer tracking — fixes cursor on all routes ── */}
         <PointerProvider />
+
+        {/* ── Motion guard: prefers-reduced-motion + low memory ── */}
+        <MotionGuard />
 
         {/* ── Custom cursor ── */}
         <Cursor />
