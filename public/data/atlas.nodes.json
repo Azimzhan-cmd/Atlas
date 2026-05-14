@@ -1,0 +1,118 @@
+{
+  "nodes": [
+    {
+      "id": "arkhevara-core",
+      "label": "ARKHEVARA Core",
+      "category": "web",
+      "position": [0, 0, 0],
+      "scale": 1.2,
+      "metrics": { "loc": 24500, "region": "EU-WEST", "uptime": 99.97, "deps": 18 },
+      "connections": ["web-arch-1", "ai-infra-1", "bots-1", "mobile-1"]
+    },
+    {
+      "id": "web-arch-1",
+      "label": "NeuroVerse Platform",
+      "category": "web",
+      "position": [3.2, 1.1, -1.5],
+      "scale": 0.9,
+      "metrics": { "loc": 18200, "region": "US-EAST", "uptime": 99.85, "deps": 12 },
+      "connections": ["arkhevara-core", "ai-infra-1"]
+    },
+    {
+      "id": "web-arch-2",
+      "label": "Library.online",
+      "category": "web",
+      "position": [-2.8, 0.5, 1.2],
+      "scale": 0.75,
+      "metrics": { "loc": 8400, "region": "EU-CENTRAL", "uptime": 99.91, "deps": 7 },
+      "connections": ["arkhevara-core", "bots-1"]
+    },
+    {
+      "id": "web-arch-3",
+      "label": "Physics Master 5.0",
+      "category": "web",
+      "position": [1.5, -2.1, 0.8],
+      "scale": 0.8,
+      "metrics": { "loc": 12000, "region": "EU-WEST", "uptime": 98.50, "deps": 9 },
+      "connections": ["arkhevara-core"]
+    },
+    {
+      "id": "web-arch-4",
+      "label": "Aliyam HairStyle",
+      "category": "web",
+      "position": [-1.2, 2.4, -0.6],
+      "scale": 0.65,
+      "metrics": { "loc": 4200, "region": "APAC", "uptime": 99.20, "deps": 5 },
+      "connections": ["arkhevara-core", "web-arch-2"]
+    },
+    {
+      "id": "bots-1",
+      "label": "Scraper Mesh α",
+      "category": "bots",
+      "position": [-3.5, -0.8, -2.0],
+      "scale": 0.85,
+      "metrics": { "loc": 6800, "region": "MULTI", "uptime": 99.60, "deps": 8 },
+      "connections": ["arkhevara-core", "ai-infra-1", "bots-2"]
+    },
+    {
+      "id": "bots-2",
+      "label": "PR Triage Agent",
+      "category": "bots",
+      "position": [-4.2, 1.3, 0.4],
+      "scale": 0.7,
+      "metrics": { "loc": 3100, "region": "EU-WEST", "uptime": 99.82, "deps": 4 },
+      "connections": ["bots-1", "arkhevara-core"]
+    },
+    {
+      "id": "bots-3",
+      "label": "Chat Dispatcher",
+      "category": "bots",
+      "position": [-2.1, -2.8, 1.5],
+      "scale": 0.6,
+      "metrics": { "loc": 2200, "region": "EU-WEST", "uptime": 99.71, "deps": 3 },
+      "connections": ["bots-1", "ai-infra-1"]
+    },
+    {
+      "id": "ai-infra-1",
+      "label": "LLM Gateway",
+      "category": "ai",
+      "position": [2.1, 2.8, 1.0],
+      "scale": 1.0,
+      "metrics": { "loc": 9500, "region": "US-WEST", "uptime": 99.95, "deps": 14 },
+      "connections": ["arkhevara-core", "web-arch-1", "bots-1", "ai-infra-2"]
+    },
+    {
+      "id": "ai-infra-2",
+      "label": "Embedding Pipeline",
+      "category": "ai",
+      "position": [3.8, 1.9, 2.2],
+      "scale": 0.8,
+      "metrics": { "loc": 5600, "region": "US-WEST", "uptime": 99.88, "deps": 6 },
+      "connections": ["ai-infra-1", "ai-infra-3"]
+    },
+    {
+      "id": "ai-infra-3",
+      "label": "Token Stream Canvas",
+      "category": "ai",
+      "position": [4.5, -0.5, 1.8],
+      "scale": 0.7,
+      "metrics": { "loc": 3800, "region": "EDGE", "uptime": 99.40, "deps": 5 },
+      "connections": ["ai-infra-2", "web-arch-1"]
+    },
+    {
+      "id": "mobile-1",
+      "label": "Atlas Mobile",
+      "category": "apps",
+      "position": [0.4, -3.2, -2.1],
+      "scale": 0.75,
+      "metrics": { "loc": 14200, "region": "MULTI", "uptime": 99.78, "deps": 11 },
+      "connections": ["arkhevara-core", "ai-infra-1"]
+    }
+  ],
+  "categories": {
+    "web":   { "color": "#F2F2F7", "label": "Web Architecture" },
+    "bots":  { "color": "#CD7F32", "label": "Autonomous Bots"  },
+    "ai":    { "color": "#E5A93C", "label": "AI / Compute"     },
+    "apps":  { "color": "#7A8290", "label": "Native Apps"      }
+  }
+}
