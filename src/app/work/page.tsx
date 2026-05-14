@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Glass } from '@/components/ui/Glass'
+import { WorkScene } from '@/lib/scenes/work/WorkScene'
 import Link from 'next/link'
 
 interface Project {
@@ -205,14 +206,18 @@ export default function WorkPage() {
     : projects.filter(p => p.category === filter)
 
   return (
-    <main style={{
-      minHeight: '100vh',
-      padding: '8rem 2.5rem 4rem',
-      position: 'relative',
-      zIndex: 10,
-      maxWidth: '1400px',
-      margin: '0 auto',
-    }}>
+    <>
+      {/* Inject 3D floating card scene */}
+      <WorkScene />
+
+      <main style={{
+        minHeight: '100vh',
+        padding: '8rem 2.5rem 4rem',
+        position: 'relative',
+        zIndex: 10,
+        maxWidth: '1400px',
+        margin: '0 auto',
+      }}>
       {/* Header */}
       <div className="animate-fadeUp" style={{ marginBottom: '3rem' }}>
         <p style={{
@@ -301,6 +306,7 @@ export default function WorkPage() {
           </p>
         </Glass>
       )}
-    </main>
+      </main>
+    </>
   )
 }

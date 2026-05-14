@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Glass } from '@/components/ui/Glass'
+import { SystemsScene } from '@/lib/scenes/systems/SystemsScene'
 
 function useTelemetry(max = 60) {
   const [events, setEvents] = useState<{ id: number; type: string; region: string; latencyMs: number; ts: number }[]>([])
@@ -129,7 +130,10 @@ export default function SystemsPage() {
   }
 
   return (
-    <main style={{ minHeight: '100vh', padding: '6rem 2rem 2rem', position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <>
+      <SystemsScene />
+
+      <main style={{ minHeight: '100vh', padding: '6rem 2rem 2rem', position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       <div style={{ pointerEvents: 'none' }}>
         <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xs)', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--accent)', opacity: 0.7, marginBottom: '0.25rem' }}>Autonomous Matrix</p>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700, color: 'var(--text-primary)' }}>Systems</h1>
@@ -145,6 +149,7 @@ export default function SystemsPage() {
         ))}
       </div>
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', opacity: 0.35, textAlign: 'center', pointerEvents: 'none' }}>Click any quadrant to expand · Live SSE telemetry</p>
-    </main>
+      </main>
+    </>
   )
 }

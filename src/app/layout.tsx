@@ -5,6 +5,9 @@ import { Cursor } from '@/components/ui/Cursor'
 import { NavBar } from '@/components/ui/NavBar'
 import { PointerProvider } from '@/components/ui/PointerProvider'
 import { MotionGuard } from '@/components/ui/MotionGuard'
+import { ViewTransitionLayer } from '@/components/ui/ViewTransitionLayer'
+import { HUD } from '@/components/ui/HUD'
+import { LoadingScreen } from '@/components/ui/LoadingScreen'
 
 export const metadata: Metadata = {
   title: {
@@ -29,6 +32,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        {/* ── Boot loading screen — fades out after ~1.7s ── */}
+        <LoadingScreen />
+
         {/* ── Persistent 3D canvas — never unmounts ── */}
         <GlobalCanvas />
 
@@ -43,6 +49,12 @@ export default function RootLayout({
 
         {/* ── Navigation ── */}
         <NavBar />
+
+        {/* ── Route transition wipe ── */}
+        <ViewTransitionLayer />
+
+        {/* ── Ambient HUD ── */}
+        <HUD />
 
         {/* ── DOM route content ── */}
         <div id="arkhevara-dom">
