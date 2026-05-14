@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useMemo, useEffect, useState } from 'react'
+import { useRef, useMemo, useEffect, useState, useCallback } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { SceneTunnel } from '@/lib/canvas/GlobalCanvas'
@@ -28,41 +28,49 @@ const CAT_COLOR: Record<string, number> = {
   apps: 0x7a8290,
 }
 
-// ── Instanced node graph ───────────────────────────────────────────────────
-function NodeGraph({ nodes, activeId, onHover }: {
+// ── Node instanced mesh ────────────────────────────────────────────────────
+function NodeGraph({
+  nodes,
+  livePos,
+  activeId,
+  onHover,
+}: {
   nodes: AtlasNode[]
+  livePos: React.RefObject<Map<string, THREE.Vector3>>
   activeId: string | null
   onHover: (id: string | null) => void
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const dummy   = useMemo(() => new THREE.Object3D(), [])
-  const basePos = useMemo(() => nodes.map(n => new THREE.Vector3(...n.position)), [nodes])
 
+  // Initialise colours once
   useEffect(() => {
     if (!meshRef.current) return
     nodes.forEach((node, i) => {
-      dummy.position.copy(basePos[i])
-      dummy.scale.setScalar(node.scale * 0.12)
-      dummy.updateMatrix()
-      meshRef.current!.setMatrixAt(i, dummy.matrix)
       meshRef.current!.setColorAt(i, new THREE.Color(CAT_COLOR[node.category] ?? 0xffffff))
     })
-    meshRef.current.instanceMatrix.needsUpdate = true
     if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true
-  }, [nodes, dummy, basePos])
+  }, [nodes])
 
   useFrame((state) => {
-    if (!meshRef.current) return
+    if (!meshRef.current || !livePos.current) return
     const t = state.clock.elapsedTime
     nodes.forEach((node, i) => {
-      const active = node.id === activeId
-      dummy.position.set(
-        basePos[i].x + Math.sin(t * 0.4 + i * 1.1) * 0.035,
-        basePos[i].y + Math.cos(t * 0.35 + i * 0.9) * 0.035,
-        basePos[i].z + Math.sin(t * 0.28 + i * 0.7) * 0.025,
-      )
-      const s = node.scale * 0.12 * (active ? 1.5 : 1)
-      dummy.scale.setScalar(s)
+      const live = livePos.current!.get(node.id)
+      const isActive = node.id === activeId
+
+      if (live) {
+        // Idle micro-drift on top of physics position
+        dummy.position.set(
+          live.x + Math.sin(t * 0.35 + i * 1.1) * 0.028,
+          live.y + Math.cos(t * 0.28 + i * 0.9) * 0.028,
+          live.z + Math.sin(t * 0.22 + i * 0.7) * 0.022,
+        )
+      } else {
+        dummy.position.set(...node.position)
+      }
+
+      dummy.scale.setScalar(node.scale * 0.12 * (isActive ? 1.6 : 1))
       dummy.updateMatrix()
       meshRef.current!.setMatrixAt(i, dummy.matrix)
     })
@@ -82,83 +90,157 @@ function NodeGraph({ nodes, activeId, onHover }: {
       <octahedronGeometry args={[1, 0]} />
       <meshStandardMaterial
         metalness={0.9}
-        roughness={0.25}
+        roughness={0.2}
         vertexColors
+        envMapIntensity={0.5}
       />
     </instancedMesh>
   )
 }
 
-// ── Edge bundle (cylinder tubes) ───────────────────────────────────────────
-function EdgeBundle({ nodes }: { nodes: AtlasNode[] }) {
-  const edges = useMemo(() => {
+// ── Edge tubes ─────────────────────────────────────────────────────────────
+function EdgeBundle({
+  nodes,
+  livePos,
+}: {
+  nodes: AtlasNode[]
+  livePos: React.RefObject<Map<string, THREE.Vector3>>
+}) {
+  const groupRef = useRef<THREE.Group>(null)
+
+  const edgePairs = useMemo(() => {
     const seen  = new Set<string>()
     const byId  = Object.fromEntries(nodes.map(n => [n.id, n]))
-    const pairs: { a: THREE.Vector3; b: THREE.Vector3 }[] = []
-    nodes.forEach(node => {
-      node.connections.forEach(cid => {
-        const key = [node.id, cid].sort().join('--')
-        if (seen.has(key) || !byId[cid]) return
-        seen.add(key)
-        pairs.push({
-          a: new THREE.Vector3(...node.position),
-          b: new THREE.Vector3(...byId[cid].position),
+    return nodes.flatMap(node =>
+      node.connections
+        .filter(cid => {
+          const key = [node.id, cid].sort().join('--')
+          if (seen.has(key) || !byId[cid]) return false
+          seen.add(key)
+          return true
         })
-      })
-    })
-    return pairs
+        .map(cid => ({ aId: node.id, bId: cid }))
+    )
   }, [nodes])
 
+  // Update edge positions from live physics positions each frame
+  useFrame(() => {
+    if (!groupRef.current || !livePos.current) return
+    groupRef.current.children.forEach((child, i) => {
+      const pair = edgePairs[i]
+      if (!pair) return
+      const a = livePos.current!.get(pair.aId)
+      const b = livePos.current!.get(pair.bId)
+      if (!a || !b) return
+
+      const dir = b.clone().sub(a)
+      const len = dir.length()
+      const mid = a.clone().add(dir.clone().multiplyScalar(0.5))
+
+      child.position.copy(mid)
+      child.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        dir.clone().normalize()
+      )
+      child.scale.set(1, len, 1)
+    })
+  })
+
   return (
-    <>
-      {edges.map(({ a, b }, i) => {
-        const dir = b.clone().sub(a)
-        const len = dir.length()
-        const mid = a.clone().add(dir.clone().multiplyScalar(0.5))
-        const q   = new THREE.Quaternion().setFromUnitVectors(
-          new THREE.Vector3(0, 1, 0),
-          dir.clone().normalize()
-        )
-        return (
-          <mesh key={i} position={mid} quaternion={q}>
-            <cylinderGeometry args={[0.007, 0.007, len, 3]} />
-            <meshBasicMaterial color={0xe5a93c} transparent opacity={0.10} />
-          </mesh>
-        )
-      })}
-    </>
+    <group ref={groupRef}>
+      {edgePairs.map(({ aId, bId }) => (
+        <mesh key={`${aId}--${bId}`}>
+          <cylinderGeometry args={[0.007, 0.007, 1, 3]} />
+          <meshBasicMaterial color={0xe5a93c} transparent opacity={0.12} />
+        </mesh>
+      ))}
+    </group>
   )
 }
 
-// ── Scene ─────────────────────────────────────────────────────────────────
+// ── Main scene ─────────────────────────────────────────────────────────────
 export function AtlasScene() {
-  const [data, setData] = useState<AtlasData | null>(null)
+  const [data, setData]     = useState<AtlasData | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
-  const setActiveNode = useInteractionStore((s) => s.setActiveNode)
+  const setActiveNode       = useInteractionStore((s) => s.setActiveNode)
+  const workerRef           = useRef<Worker | null>(null)
+  const livePos             = useRef<Map<string, THREE.Vector3>>(new Map())
 
   useEffect(() => {
     fetch('/data/atlas.nodes.json')
       .then(r => r.json())
-      .then(setData)
+      .then((d: AtlasData) => {
+        setData(d)
+
+        // Seed live positions from JSON
+        d.nodes.forEach(n => {
+          livePos.current.set(n.id, new THREE.Vector3(...n.position))
+        })
+
+        // Launch force-layout Web Worker
+        const worker = new Worker(
+          new URL('@/lib/workers/forceLayout.worker.ts', import.meta.url),
+          { type: 'module' }
+        )
+        workerRef.current = worker
+
+        // Build edge list
+        const seen  = new Set<string>()
+        const edges: { source: string; target: string }[] = []
+        d.nodes.forEach(n => {
+          n.connections.forEach(cid => {
+            const key = [n.id, cid].sort().join('--')
+            if (!seen.has(key)) {
+              seen.add(key)
+              edges.push({ source: n.id, target: cid })
+            }
+          })
+        })
+
+        worker.postMessage({ type: 'INIT', nodes: d.nodes, edges })
+
+        worker.onmessage = (e) => {
+          if (e.data.type !== 'POSITIONS') return
+          const pos: Record<string, [number, number, number]> = e.data.positions
+          Object.entries(pos).forEach(([id, xyz]) => {
+            const v = livePos.current.get(id)
+            if (v) {
+              v.set(xyz[0], xyz[1], xyz[2])
+            } else {
+              livePos.current.set(id, new THREE.Vector3(...xyz))
+            }
+          })
+        }
+      })
+
+    return () => {
+      workerRef.current?.postMessage({ type: 'STOP' })
+      workerRef.current?.terminate()
+    }
   }, [])
 
-  const handleHover = (id: string | null) => {
+  const handleHover = useCallback((id: string | null) => {
     setActiveId(id)
     setActiveNode(id)
-  }
+  }, [setActiveNode])
 
   return (
     <SceneTunnel.In>
-      <fog attach="fog" args={['#090909', 18, 45]} />
+      <fog attach="fog" args={['#090909', 20, 55]} />
       <ambientLight color="#1C1C1E" intensity={0.7} />
-      <pointLight position={[0, 10, 0]} color="#E5A93C" intensity={4} distance={35} />
-      <pointLight position={[-5, -5, 5]} color="#3A3A8A" intensity={1} distance={20} />
-      <pointLight position={[5, -5, -5]} color="#CD7F32" intensity={0.8} distance={20} />
+      <pointLight position={[0, 10, 0]}    color="#E5A93C" intensity={5}   distance={40} />
+      <pointLight position={[-6, -6, 6]}   color="#3A3A8A" intensity={1.2} distance={25} />
+      <pointLight position={[6, -6, -6]}   color="#CD7F32" intensity={0.9} distance={25} />
 
       {data && (
         <>
-          <NodeGraph nodes={data.nodes} activeId={activeId} onHover={handleHover} />
-          <EdgeBundle nodes={data.nodes} />
+          <NodeGraph
+            nodes={data.nodes}
+            livePos={livePos}
+            activeId={activeId}
+            onHover={handleHover}
+          />
+          <EdgeBundle nodes={data.nodes} livePos={livePos} />
         </>
       )}
     </SceneTunnel.In>

@@ -4,7 +4,7 @@ import { SceneTunnel } from '@/lib/canvas/GlobalCanvas'
 import { ArkheCore } from './ArkheCore'
 import { Archway } from './Archway'
 import { SystemLines } from './SystemLines'
-import { AmbientParticles } from './AmbientParticles'
+import { CurlNoiseField } from './CurlNoiseField'
 
 interface PortalSceneProps {
   disruption?: number
@@ -13,33 +13,33 @@ interface PortalSceneProps {
 /**
  * PortalScene — injected into the global canvas via SceneTunnel.
  * Renders when the '/' route is active.
+ *
+ * Stack (back → front):
+ *   CurlNoiseField  — 500k GPU-simulated divergence-free particles
+ *   Archway         — bronze oxidation arch
+ *   ArkheCore       — raymarched SDF sphere with bloom
+ *   SystemLines     — 12 golden-ratio bezier ribbons
  */
 export function PortalScene({ disruption = 0 }: PortalSceneProps) {
   return (
     <SceneTunnel.In>
       {/* Scene lighting */}
-      <ambientLight color="#1C1C1E" intensity={0.4} />
+      <ambientLight color="#1C1C1E" intensity={0.35} />
       <directionalLight
         position={[0.5, 2, 1.5]}
         color="#E5C870"
-        intensity={8.5}
+        intensity={6}
         castShadow={false}
       />
 
-      {/* Background radial fog feel */}
-      <fog attach="fog" args={['#090909', 12, 35]} />
+      {/* Atmospheric depth */}
+      <fog attach="fog" args={['#090909', 14, 38]} />
 
-      {/* The Arkhē Core — raymarched SDF */}
-      <ArkheCore disruption={disruption} />
-
-      {/* Bronze Archway behind the Core */}
+      {/* ── Layers (back → front) ── */}
+      <CurlNoiseField />
       <Archway />
-
-      {/* 12 system lines radiating at golden-ratio angles */}
+      <ArkheCore disruption={disruption} />
       <SystemLines />
-
-      {/* Background ambient particles */}
-      <AmbientParticles />
     </SceneTunnel.In>
   )
 }
