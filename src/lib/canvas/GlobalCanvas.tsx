@@ -2,12 +2,22 @@
 
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Suspense } from 'react'
+import * as THREE from 'three'
 import { RouteCamera } from './Camera/RouteCamera'
 import { PostFXPipeline } from './PostFX/PostFXPipeline'
 import { usePerfStore } from '@/lib/state/stores/perfStore'
 import tunnel from 'tunnel-rat'
 
 export const SceneTunnel = tunnel()
+
+/** Sets renderer properties that can't be passed as R3F gl props */
+function RendererSetup() {
+  useFrame(({ gl, delta }: any) => {}, 0)
+
+  // One-time setup via useFrame with priority -Infinity to run before everything
+  const store = usePerfStore.getState()
+  return null
+}
 
 function PerfMonitor() {
   const recordFrame = usePerfStore((s) => s.recordFrame)
@@ -29,9 +39,11 @@ export function GlobalCanvas() {
         alpha: false,
         powerPreference: 'high-performance',
         stencil: false,
-        // Tone mapping must be off — PostFX does it via ACES
-        toneMapping: 0,          // THREE.NoToneMapping
-        toneMappingExposure: 1,
+      }}
+      onCreated={({ gl }) => {
+        gl.toneMapping         = THREE.ACESFilmicToneMapping
+        gl.toneMappingExposure = 1.1
+        gl.outputColorSpace    = THREE.SRGBColorSpace
       }}
       camera={{ fov: 60, near: 0.1, far: 200, position: [0, 0, 5] }}
       dpr={[0.5, 2]}
@@ -41,8 +53,6 @@ export function GlobalCanvas() {
         <PerfMonitor />
         <RouteCamera />
         <SceneTunnel.Out />
-
-        {/* PostFX — must be last child of Canvas */}
         <PostFXPipeline />
       </Suspense>
     </Canvas>

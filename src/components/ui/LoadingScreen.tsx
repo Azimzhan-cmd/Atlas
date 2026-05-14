@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 
 const BOOT_LINES = [
   'ARKHEVARA OS v1.0.0',
@@ -14,16 +14,19 @@ const BOOT_LINES = [
   'SYSTEM ONLINE',
 ]
 
-/**
- * LoadingScreen — cinematic boot sequence shown on first mount.
- * Fades out once React has hydrated and the 3D canvas is ready.
- */
 export function LoadingScreen() {
   const [lines, setLines]     = useState<string[]>([])
   const [done, setDone]       = useState(false)
-  const [visible, setVisible] = useState(true)
+  const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    // Only show on first visit per session
+    if (sessionStorage.getItem('ark_booted')) {
+      return
+    }
+    sessionStorage.setItem('ark_booted', '1')
+    setVisible(true)
+
     let i = 0
     const interval = setInterval(() => {
       if (i < BOOT_LINES.length) {
@@ -31,13 +34,12 @@ export function LoadingScreen() {
         i++
       } else {
         clearInterval(interval)
-        // Short pause at "SYSTEM ONLINE" then fade out
         setTimeout(() => {
           setDone(true)
           setTimeout(() => setVisible(false), 700)
-        }, 600)
+        }, 500)
       }
-    }, 130)
+    }, 120)
 
     return () => clearInterval(interval)
   }, [])
@@ -88,26 +90,19 @@ export function LoadingScreen() {
         fontSize: '0.72rem',
         letterSpacing: '0.04em',
         lineHeight: 1.9,
-        color: 'rgba(229,169,60,0.65)',
         maxWidth: '420px',
         width: '100%',
         padding: '0 1rem',
       }}>
         {lines.map((line, i) => (
-          <div
-            key={i}
-            style={{
-              display: 'flex',
-              gap: '0.75rem',
-              color: i === lines.length - 1 ? '#E5A93C' : 'rgba(229,169,60,0.55)',
-              fontWeight: i === lines.length - 1 ? 700 : 400,
-            }}
-          >
-            <span style={{ opacity: 0.35 }}>
-              {String(i + 1).padStart(2, '0')}
-            </span>
+          <div key={i} style={{
+            display: 'flex',
+            gap: '0.75rem',
+            color: i === lines.length - 1 ? '#E5A93C' : 'rgba(229,169,60,0.55)',
+            fontWeight: i === lines.length - 1 ? 700 : 400,
+          }}>
+            <span style={{ opacity: 0.35 }}>{String(i + 1).padStart(2, '0')}</span>
             <span>{line}</span>
-            {/* Blinking cursor on last line */}
             {i === lines.length - 1 && !done && (
               <span style={{ animation: 'blink 1s step-end infinite' }}>▋</span>
             )}
@@ -129,23 +124,30 @@ export function LoadingScreen() {
           height: '100%',
           width: `${Math.round((lines.length / BOOT_LINES.length) * 100)}%`,
           background: 'linear-gradient(90deg, #CD7F32, #E5A93C)',
-          transition: 'width 120ms linear',
+          transition: 'width 100ms linear',
           boxShadow: '0 0 8px rgba(229,169,60,0.5)',
         }} />
       </div>
 
-      {/* Corner decorations */}
-      {['0 0', '0 auto', 'auto 0', 'auto auto'].map((margin, i) => (
+      {/* Corner brackets */}
+      {[
+        { top: '1.5rem', left: '1.5rem', bt: '1px solid rgba(229,169,60,0.3)', bl: '1px solid rgba(229,169,60,0.3)' },
+        { top: '1.5rem', right: '1.5rem', bt: '1px solid rgba(229,169,60,0.3)', br: '1px solid rgba(229,169,60,0.3)' },
+        { bottom: '1.5rem', left: '1.5rem', bb: '1px solid rgba(229,169,60,0.3)', bl: '1px solid rgba(229,169,60,0.3)' },
+        { bottom: '1.5rem', right: '1.5rem', bb: '1px solid rgba(229,169,60,0.3)', br: '1px solid rgba(229,169,60,0.3)' },
+      ].map((s, i) => (
         <div key={i} style={{
           position: 'absolute',
-          ...(i < 2 ? { top: '1.5rem' } : { bottom: '1.5rem' }),
-          ...(i % 2 === 0 ? { left: '1.5rem' } : { right: '1.5rem' }),
           width: '16px',
           height: '16px',
-          borderTop:    i < 2 ? '1px solid rgba(229,169,60,0.3)' : 'none',
-          borderBottom: i >= 2 ? '1px solid rgba(229,169,60,0.3)' : 'none',
-          borderLeft:   i % 2 === 0 ? '1px solid rgba(229,169,60,0.3)' : 'none',
-          borderRight:  i % 2 === 1 ? '1px solid rgba(229,169,60,0.3)' : 'none',
+          top:    s.top,
+          left:   s.left,
+          right:  s.right,
+          bottom: s.bottom,
+          borderTop:    s.bt ?? 'none',
+          borderLeft:   s.bl ?? 'none',
+          borderRight:  s.br ?? 'none',
+          borderBottom: s.bb ?? 'none',
         }} />
       ))}
     </div>
