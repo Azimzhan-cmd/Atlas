@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { PortalScene } from '@/lib/scenes/portal/PortalScene'
-import { useUnifiedPointer } from '@/lib/utils/input/unifiedPointer'
 import { Glass } from '@/components/ui/Glass'
 
 export default function PortalPage() {
@@ -11,8 +10,7 @@ export default function PortalPage() {
   const [disruption, setDisruption] = useState(0)
   const [entered, setEntered] = useState(false)
 
-  // Activate unified pointer tracking
-  useUnifiedPointer()
+
 
   const handleEnter = () => {
     if (entered) return

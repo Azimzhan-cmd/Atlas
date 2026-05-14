@@ -1,18 +1,26 @@
 'use client'
 
-import { Canvas } from '@react-three/fiber'
-import { Suspense } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Suspense, useCallback } from 'react'
 import { RouteCamera } from './Camera/RouteCamera'
+import { usePerfStore } from '@/lib/state/stores/perfStore'
 import tunnel from 'tunnel-rat'
 
-// Singleton tunnel — scenes inject themselves here from any route
 export const SceneTunnel = tunnel()
 
-/**
- * GlobalCanvas — mounts ONCE in layout.tsx, never unmounts.
- * Positioned fixed behind all DOM content.
- * All 3D scenes render through SceneTunnel.Out.
- */
+// Inner component — useFrame only works inside Canvas
+function PerfMonitor() {
+  const recordFrame = usePerfStore((s) => s.recordFrame)
+  const dpr         = usePerfStore((s) => s.dpr)
+
+  useFrame(({ gl }, delta) => {
+    recordFrame(delta * 1000)
+    gl.setPixelRatio(dpr)
+  })
+
+  return null
+}
+
 export function GlobalCanvas() {
   return (
     <Canvas
@@ -24,7 +32,7 @@ export function GlobalCanvas() {
         pointerEvents: 'none',
       }}
       gl={{
-        antialias: false,          // post-processing handles AA
+        antialias: false,
         alpha: false,
         powerPreference: 'high-performance',
         stencil: false,
@@ -35,10 +43,13 @@ export function GlobalCanvas() {
         far: 200,
         position: [0, 0, 5],
       }}
-      dpr={[0.5, 2]}              // adaptive via perfStore
+      dpr={[0.5, 2]}
       frameloop="always"
     >
       <Suspense fallback={null}>
+        {/* Adaptive DPR + perf monitor */}
+        <PerfMonitor />
+
         {/* Route camera — tweens on pathname change */}
         <RouteCamera />
 

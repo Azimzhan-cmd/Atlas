@@ -3,6 +3,7 @@ import './globals.css'
 import { GlobalCanvas } from '@/lib/canvas/GlobalCanvas'
 import { Cursor } from '@/components/ui/Cursor'
 import { NavBar } from '@/components/ui/NavBar'
+import { PointerProvider } from '@/components/ui/PointerProvider'
 
 export const metadata: Metadata = {
   title: {
@@ -29,6 +30,9 @@ export default function RootLayout({
       <body>
         {/* ── Persistent 3D canvas — never unmounts ── */}
         <GlobalCanvas />
+
+        {/* ── Global pointer tracking — fixes cursor on all routes ── */}
+        <PointerProvider />
 
         {/* ── Custom cursor ── */}
         <Cursor />
